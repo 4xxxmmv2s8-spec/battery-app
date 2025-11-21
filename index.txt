@@ -1,0 +1,728 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <title>תיעוד טמפרטורות סוללות</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    :root {
+      --bg: #f3f4f6;
+      --card-bg: #ffffff;
+      --border: #e5e7eb;
+      --text-main: #111827;
+      --text-sub: #6b7280;
+      --accent: #2563eb;
+      --danger: #dc2626;
+      --radius: 12px;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text-main);
+    }
+
+    .app {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 12px;
+    }
+
+    .header {
+      margin-top: 8px;
+      border-radius: var(--radius);
+      border: 1px solid #d1d5db;
+      background: #fff;
+      padding: 10px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .header-title {
+      font-size: 20px;
+      font-weight: 700;
+      text-align: center;
+      flex: 1;
+    }
+
+    .header-actions {
+      display: flex;
+      gap: 8px;
+    }
+
+    .icon-button {
+      border: none;
+      border-radius: 8px;
+      padding: 4px 8px;
+      cursor: pointer;
+      background: #e5e7eb;
+      color: #111827;
+      font-size: 16px;
+    }
+
+    .card {
+      margin-top: 10px;
+      border-radius: 14px;
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      padding: 12px;
+    }
+
+    .card h2 {
+      margin: 0 0 8px;
+      font-size: 18px;
+    }
+
+    .field {
+      margin-bottom: 8px;
+    }
+
+    .field label {
+      display: block;
+      font-size: 13px;
+      color: var(--text-sub);
+      margin-bottom: 2px;
+    }
+
+    .field input {
+      width: 100%;
+      padding: 8px 10px;
+      border-radius: 8px;
+      border: 1px solid #d1d5db;
+      font-size: 14px;
+    }
+
+    .buttons-row {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-top: 8px;
+    }
+
+    button.primary {
+      background: #22c55e;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      padding: 10px;
+      font-size: 15px;
+      cursor: pointer;
+    }
+
+    button.secondary {
+      background: #3b82f6;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      padding: 10px;
+      font-size: 15px;
+      cursor: pointer;
+    }
+
+    button.warn {
+      background: #f97316;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      padding: 10px;
+      font-size: 15px;
+      cursor: pointer;
+    }
+
+    button.outline {
+      background: #e5e7eb;
+      color: #111827;
+      border: none;
+      border-radius: 8px;
+      padding: 8px;
+      font-size: 14px;
+      cursor: pointer;
+    }
+
+    .stats-card {
+      margin-top: 10px;
+      border-radius: 10px;
+      background: #ffffff;
+      border: 1px solid #e5e7eb;
+      padding: 8px 12px;
+      font-size: 13px;
+      color: var(--text-sub);
+      line-height: 1.4;
+    }
+
+    .table-container {
+      margin-top: 10px;
+      background: #f3f4f6;
+      border-radius: 12px;
+      padding: 6px;
+      max-height: 420px;
+      overflow: auto;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+
+    thead tr {
+      position: sticky;
+      top: 0;
+      background: #e5e7eb;
+      z-index: 1;
+    }
+
+    th, td {
+      padding: 6px 4px;
+      text-align: center;
+      border-bottom: 1px solid #e5e7eb;
+      white-space: nowrap;
+    }
+
+    tbody tr:nth-child(even) {
+      background: #f9fafb;
+    }
+
+    tr.high-temp {
+      background: #fee2e2;
+      color: #b91c1c;
+    }
+
+    .filter-bar {
+      margin-top: 10px;
+      display: flex;
+      gap: 8px;
+    }
+
+    .filter-bar button {
+      flex: 1;
+    }
+
+    /* מסך סינון מלא (אוברליי) */
+
+    .filter-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.65);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 50;
+    }
+
+    .filter-panel {
+      width: 100%;
+      max-width: 480px;
+      max-height: 80vh;
+      display: flex;
+      flex-direction: column;
+      border-radius: 18px;
+      background: #f9fafb;
+      box-shadow: 0 18px 40px rgba(0,0,0,0.2);
+      overflow: hidden;
+    }
+
+    .filter-header {
+      padding: 10px 14px;
+      display: flex;
+      align-items: center;
+      border-bottom: 1px solid #e5e7eb;
+      background: #ffffff;
+    }
+
+    .filter-title {
+      flex: 1;
+      text-align: center;
+      font-weight: 600;
+      font-size: 16px;
+    }
+
+    .filter-close {
+      border: none;
+      background: transparent;
+      font-size: 16px;
+      cursor: pointer;
+      color: #2563eb;
+    }
+
+    .filter-list {
+      flex: 1;
+      overflow: auto;
+      background: #f9fafb;
+    }
+
+    .filter-item {
+      padding: 10px 14px;
+      border-bottom: 1px solid #e5e7eb;
+      cursor: pointer;
+      font-size: 15px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .filter-item:hover {
+      background: #e5e7eb;
+    }
+
+    .filter-item.active {
+      background: #dbeafe;
+      font-weight: 600;
+      color: #1d4ed8;
+    }
+
+    .filter-badge {
+      font-size: 12px;
+      color: #6b7280;
+    }
+
+    @media (max-width: 600px) {
+      .app {
+        padding: 8px;
+      }
+      .header-title {
+        font-size: 18px;
+      }
+      .card h2 {
+        font-size: 16px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <!-- כותרת עליונה -->
+    <div class="header">
+      <div class="header-actions">
+        <!-- אפשר להרחיב בעתיד -->
+      </div>
+      <div class="header-title">תיעוד טמפרטורות סוללות</div>
+      <div class="header-actions">
+        <!-- שמרתי מקום לכפתורי מצב לילה בעתיד -->
+      </div>
+    </div>
+
+    <!-- כרטיס טופס -->
+    <div class="card">
+      <h2>הוספת רשומה</h2>
+      <div class="field">
+        <label>מספר סוללה</label>
+        <input id="battery-number" type="text" />
+      </div>
+      <div class="field">
+        <label>טמפ' התחלה (°C)</label>
+        <input id="start-temp" type="number" step="0.1" />
+      </div>
+      <div class="field">
+        <label>שעת תחילת טעינה (לא חובה, HH:MM)</label>
+        <input id="start-time" type="text" placeholder="לדוגמה 10:30" />
+      </div>
+      <div class="field">
+        <label>טמפ' אחרי 2ש (לא חובה)</label>
+        <input id="temp-after" type="number" step="0.1" />
+      </div>
+      <div class="field">
+        <label>שעת בדיקה שנייה (לא חובה)</label>
+        <input id="time-after" type="text" placeholder="לדוגמה 12:30" />
+      </div>
+
+      <div class="buttons-row">
+        <button class="primary" id="add-record-btn">➕ הוסף רשומה</button>
+        <button class="secondary" id="reminder-btn">⏰ תזכורות כל שעה (דפדפן)</button>
+        <button class="warn" id="export-csv-btn">📤 ייצוא ל-CSV</button>
+        <button class="outline" id="export-report-btn">📄 דוח טקסט (PDF דרך הדפסה)</button>
+      </div>
+    </div>
+
+    <!-- פס סינון -->
+    <div class="filter-bar">
+      <button class="outline" id="filter-open-btn">סינון: הכל</button>
+      <button class="outline" id="clear-data-btn">נקה נתונים (בדפדפן)</button>
+    </div>
+
+    <!-- כרטיס סטטיסטיקות -->
+    <div class="stats-card" id="stats-box">
+      אין נתונים להצגה
+    </div>
+
+    <!-- טבלה -->
+    <div class="table-container">
+      <table id="data-table">
+        <thead>
+          <tr>
+            <th>מס' סוללה</th>
+            <th>טמפ' התחלה</th>
+            <th>תאריך + שעת התחלה</th>
+            <th>טמפ' אחרי 2ש</th>
+            <th>שעת בדיקה שנייה</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- אוברליי סינון מלא -->
+  <div class="filter-overlay" id="filter-overlay">
+    <div class="filter-panel">
+      <div class="filter-header">
+        <button class="filter-close" id="filter-close-btn">סגור</button>
+        <div class="filter-title">בחר סוללה לסינון</div>
+        <div style="width:70px;"></div>
+      </div>
+      <div class="filter-list" id="filter-list"></div>
+    </div>
+  </div>
+
+  <script>
+    // ------- נתונים וזיכרון בדפדפן --------
+    const STORAGE_KEY = 'battery_records_v1';
+
+    function loadRecords() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (!raw) return [];
+        return JSON.parse(raw);
+      } catch (e) {
+        console.error(e);
+        return [];
+      }
+    }
+
+    function saveRecords(records) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(records));
+    }
+
+    // ------- אלמנטים DOM --------
+    const batteryNumberInput = document.getElementById('battery-number');
+    const startTempInput = document.getElementById('start-temp');
+    const startTimeInput = document.getElementById('start-time');
+    const tempAfterInput = document.getElementById('temp-after');
+    const timeAfterInput = document.getElementById('time-after');
+
+    const addRecordBtn = document.getElementById('add-record-btn');
+    const reminderBtn = document.getElementById('reminder-btn');
+    const exportCsvBtn = document.getElementById('export-csv-btn');
+    const exportReportBtn = document.getElementById('export-report-btn');
+
+    const tableBody = document.querySelector('#data-table tbody');
+    const statsBox = document.getElementById('stats-box');
+
+    const filterOpenBtn = document.getElementById('filter-open-btn');
+    const clearDataBtn = document.getElementById('clear-data-btn');
+
+    const filterOverlay = document.getElementById('filter-overlay');
+    const filterList = document.getElementById('filter-list');
+    const filterCloseBtn = document.getElementById('filter-close-btn');
+
+    // מצב אפליקציה
+    let allRecords = loadRecords();
+    let currentFilter = 'הכל';
+
+    // ------- רינדור טבלה --------
+    function renderTable() {
+      tableBody.innerHTML = '';
+      const recs = getFilteredRecords();
+      recs.forEach(rec => {
+        const tr = document.createElement('tr');
+
+        const tempAfter = rec.temp_after;
+        let high = false;
+        const val = parseFloat(tempAfter);
+        if (!isNaN(val) && val > 40) high = true;
+        if (high) tr.classList.add('high-temp');
+
+        tr.innerHTML = `
+          <td>${rec.battery_number || ''}</td>
+          <td>${rec.start_temp ?? ''}</td>
+          <td>${rec.start_datetime || ''}</td>
+          <td>${rec.temp_after ?? ''}</td>
+          <td>${rec.time_after || ''}</td>
+        `;
+        tableBody.appendChild(tr);
+      });
+    }
+
+    // ------- סטטיסטיקות --------
+    function updateStats() {
+      const recs = getFilteredRecords();
+      if (!recs.length) {
+        statsBox.textContent = 'אין נתונים להצגה';
+        return;
+      }
+
+      const total = recs.length;
+      const uniq = new Set(recs.map(r => r.battery_number || '')).size;
+      let highs = 0;
+      const startTemps = [];
+      const afterTemps = [];
+      let maxAfter = null;
+
+      recs.forEach(r => {
+        const st = parseFloat(r.start_temp);
+        if (!isNaN(st)) startTemps.push(st);
+
+        const ta = parseFloat(r.temp_after);
+        if (!isNaN(ta)) {
+          afterTemps.push(ta);
+          if (ta > 40) highs++;
+          if (maxAfter === null || ta > maxAfter) maxAfter = ta;
+        }
+      });
+
+      const avgStart = startTemps.length
+        ? (startTemps.reduce((a, b) => a + b, 0) / startTemps.length)
+        : null;
+      const avgAfter = afterTemps.length
+        ? (afterTemps.reduce((a, b) => a + b, 0) / afterTemps.length)
+        : null;
+
+      const parts = [
+        `סה"כ רשומות: ${total}`,
+        `מספר סוללות שונות: ${uniq}`,
+        `חריגות מעל 40°C: ${highs}`
+      ];
+      if (avgStart !== null || avgAfter !== null) {
+        parts.push(
+          `ממוצע התחלה: ${avgStart !== null ? avgStart.toFixed(1) + '°C' : '-'} | ` +
+          `ממוצע אחרי 2ש: ${avgAfter !== null ? avgAfter.toFixed(1) + '°C' : '-'}`
+        );
+      }
+      if (maxAfter !== null) {
+        parts.push(`מקסימום אחרי 2ש: ${maxAfter.toFixed(1)}°C`);
+      }
+
+      statsBox.innerHTML = parts.join('<br>');
+    }
+
+    function getFilteredRecords() {
+      if (currentFilter === 'הכל') return allRecords.slice();
+      return allRecords.filter(r => String(r.battery_number) === currentFilter);
+    }
+
+    // ------- הוספת רשומה --------
+    addRecordBtn.addEventListener('click', () => {
+      const b = batteryNumberInput.value.trim();
+      const t1Str = startTempInput.value.trim();
+      const startTime = startTimeInput.value.trim();
+      const t2Str = tempAfterInput.value.trim();
+      const time2 = timeAfterInput.value.trim();
+
+      if (!b || !t1Str) {
+        alert("חובה למלא מספר סוללה וטמפ' התחלה");
+        return;
+      }
+
+      const t1 = parseFloat(t1Str);
+      if (isNaN(t1)) {
+        alert("טמפ' התחלה לא מספר");
+        return;
+      }
+
+      let t2 = '';
+      if (t2Str) {
+        const val = parseFloat(t2Str);
+        if (isNaN(val)) {
+          alert("טמפ' אחרי 2ש לא מספר");
+          return;
+        }
+        t2 = val.toFixed(1);
+        if (val > 40) {
+          alert('אזהרה: טמפרטורה אחרי 2 שעות מעל 40°C! בדוק מיד את הסוללה.');
+        }
+      }
+
+      let startDt;
+      if (startTime) {
+        const dateStr = new Date().toLocaleDateString('he-IL');
+        startDt = `${dateStr} ${startTime}`;
+      } else {
+        const now = new Date();
+        const dateStr = now.toLocaleDateString('he-IL');
+        const timeStr = now.toTimeString().substring(0,5);
+        startDt = `${dateStr} ${timeStr}`;
+      }
+
+      const rec = {
+        battery_number: b,
+        start_temp: t1.toFixed(1),
+        start_datetime: startDt,
+        start_time: startTime,
+        temp_after: t2,
+        time_after: time2
+      };
+
+      allRecords.push(rec);
+      saveRecords(allRecords);
+      renderTable();
+      updateStats();
+      updateFilterButtonLabel();
+
+      batteryNumberInput.value = '';
+      startTempInput.value = '';
+      startTimeInput.value = '';
+      tempAfterInput.value = '';
+      timeAfterInput.value = '';
+    });
+
+    // ------- ייצוא CSV --------
+    exportCsvBtn.addEventListener('click', () => {
+      if (!allRecords.length) {
+        alert('אין נתונים ליצוא');
+        return;
+      }
+      const rows = [];
+      rows.push([
+        'Battery Number',
+        'Start Temp (C)',
+        'Start DateTime',
+        'Charge Start Time',
+        'Temp After 2h (C)',
+        'Second Check Time'
+      ]);
+      getFilteredRecords().forEach(r => {
+        rows.push([
+          r.battery_number || '',
+          r.start_temp || '',
+          r.start_datetime || '',
+          r.start_time || '',
+          r.temp_after || '',
+          r.time_after || ''
+        ]);
+      });
+
+      const csv = rows.map(r => r.map(x => `"${String(x).replace(/"/g,'""')}"`).join(',')).join('\n');
+      const blob = new Blob([csv], {type: 'text/csv;charset=utf-8;'});
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'battery_export.csv';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    });
+
+    // ------- דוח טקסט --------
+    exportReportBtn.addEventListener('click', () => {
+      const recs = getFilteredRecords();
+      if (!recs.length) {
+        alert('אין נתונים לדוח');
+        return;
+      }
+      updateStats();
+      const statsText = statsBox.innerText;
+
+      let content = 'דוח טמפרטורות סוללות\n';
+      content += '----------------------------------------\n\n';
+      content += statsText + '\n\n';
+      content += 'רשומות:\n';
+      content += 'מספר\tהתחלה[°C]\tתאריך-שעה\tשעת התחלה\tאחרי 2ש[°C]\tשעה 2\n';
+      recs.forEach(r => {
+        content += `${r.battery_number}\t${r.start_temp}\t${r.start_datetime}\t${r.start_time || ''}\t${r.temp_after || ''}\t${r.time_after || ''}\n`;
+      });
+
+      const blob = new Blob([content], {type: 'text/plain;charset=utf-8;'});
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'battery_report.txt';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    });
+
+    // ------- תזכורות כל שעה (בגסות) --------
+    reminderBtn.addEventListener('click', async () => {
+      if (!('Notification' in window)) {
+        alert('הדפדפן לא תומך בהתראות');
+        return;
+      }
+      let perm = Notification.permission;
+      if (perm === 'default') {
+        perm = await Notification.requestPermission();
+      }
+      if (perm !== 'granted') {
+        alert('ההרשאה להתראות נחסמה');
+        return;
+      }
+      alert('החל מהשעה הקרובה תופיע התראה כל שעה כל עוד הדף פתוח.');
+
+      setInterval(() => {
+        new Notification('בדיקת סוללות', {
+          body: 'זמן לבדוק טמפרטורות לסוללות ולתעד בטבלה.',
+        });
+      }, 60 * 60 * 1000);
+    });
+
+    // ------- נקה נתונים --------
+    clearDataBtn.addEventListener('click', () => {
+      if (!confirm('למחוק את כל הנתונים מהדפדפן?')) return;
+      allRecords = [];
+      saveRecords(allRecords);
+      renderTable();
+      updateStats();
+      updateFilterButtonLabel();
+    });
+
+    // ------- מסך סינון מלא --------
+    function updateFilterButtonLabel() {
+      filterOpenBtn.textContent = `סינון: ${currentFilter}`;
+    }
+
+    function openFilterOverlay() {
+      const numsSet = new Set(allRecords.map(r => String(r.battery_number || '').trim()).filter(Boolean));
+      const nums = Array.from(numsSet).sort((a, b) => a.localeCompare(b, 'he-IL', {numeric:true}));
+      const options = ['הכל', ...nums];
+
+      filterList.innerHTML = '';
+      options.forEach(opt => {
+        const div = document.createElement('div');
+        div.className = 'filter-item';
+        if (opt === currentFilter) div.classList.add('active');
+        div.innerHTML = `
+          <span>${opt}</span>
+          <span class="filter-badge">
+            ${opt === 'הכל'
+              ? allRecords.length + ' רשומות'
+              : allRecords.filter(r => String(r.battery_number) === opt).length + ' רשומות'
+            }
+          </span>
+        `;
+        div.addEventListener('click', () => {
+          currentFilter = opt;
+          closeFilterOverlay();
+          renderTable();
+          updateStats();
+          updateFilterButtonLabel();
+        });
+        filterList.appendChild(div);
+      });
+
+      filterOverlay.style.display = 'flex';
+    }
+
+    function closeFilterOverlay() {
+      filterOverlay.style.display = 'none';
+    }
+
+    filterOpenBtn.addEventListener('click', openFilterOverlay);
+    filterCloseBtn.addEventListener('click', closeFilterOverlay);
+    filterOverlay.addEventListener('click', e => {
+      if (e.target === filterOverlay) closeFilterOverlay();
+    });
+
+    // ------- אתחול ראשוני --------
+    renderTable();
+    updateStats();
+    updateFilterButtonLabel();
+  </script>
+</body>
+</html>
